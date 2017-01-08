@@ -1,48 +1,55 @@
 # leatherbound_kernel
 Python and LaTeX tools to create the PDFs for a leatherbound book of the Linux kernel source code.
 
-## -- Where to get source code --
+## -- Where to get Linux source code --
 The Linux public archive: https://www.kernel.org/pub/linux/kernel/
 
 ##-- Project setup details --
-_This is how I have my development environment setup._
-Linux source downloaded to $projectroot/linux-\*.\*.\*/
+This is how I have my development environment setup.
 
-Virtual environment setup in $projectroot/venv/
+* Copy the master branch from GitHub
 
-LaTeX Jinja templates are found in $projectroot/templates/
+* Download the Linux source to $projectroot/linux-\*.\*.\*/
 
-Python script for finding files and string processing is `make_chapter.py` and `make_book.py`
+* Setup a virtual environment in $projectroot/venv/
 
-Output pdfs are created in the current working directory.
-
-Full installation instrucutions still being worked on.
+* Use `make_chapter.py` and `make_book.py` to create PDFs.
 
 ## -- Dependencies --
 ### Python Dependencies
-_I have these in a python virtualenvionment_
+I have these in a python virtualenvionment:
 * python3
 * docopt (pip install docopt)
 * Jinja2 (pip install Jinja2)
 
 ### LaTeX Dependencies
-My font of choice was PT Mono, of the ParaType family.
 This project makes use of the following LaTeX packages:
 * listings
 * fancyhdr
 * paratype
 
-Of these, paratype is likely the most difficult to obtain. 
-OpenSUSE provides a package (zypper install texlive-paratype), but [CTAN](http://www.ctan.org/tex-archive/fonts/paratype/tex) also provides a similar package. The CTAN package can be installed by downloading all the files to /usr/share/texmf/tex/latex/paratype/ , or to the proper location for your operating system.
+Of these, the paratype package is likely the most difficult to obtain. 
+
+OpenSUSE provides a package (`zypper install texlive-paratype`), but [CTAN](http://www.ctan.org/tex-archive/fonts/paratype/tex) also provides a similar package. The CTAN package can be installed by downloading all the files to /usr/share/texmf/tex/latex/paratype/ , or to the proper location for your operating system.
 
 
 If the TeX paratype package is too difficult to obtain, a different font could be used by changing the LaTeX templates under $projectroot/templates/
 
-## -- Process --
-Download and unpack the kernel of choice from public archive.
-Run the `make_book.py` command to process the unpacked directory:
+## -- Examples --
+I've done most of my development with Linux 2.6.0, since the linux-2.6.0/kernel directory is still small enough to fit within a single book.
 
-`./make_book.py --color -t 'Linux 2.6.0' -r 'Released December 17, 2003' \
--c 'linux-2.6.0/kernel/' linux-2.6.0/kernel/`
+To create a single chapter of a .c file:
+`./make_chapter.py --color linux-2.6.0/kernel/fork.c`
 
-The script will locate all files in the target directory and process the file name to create and render .tex files in a temporary directory. PDF output files are copied to the current working directory.
+If the the .c file falls into a different child directory, use:
+`./make_chapter.py --color -p linux-2.6.0/kernel linux-2.6.0/kernel/power/poweroff.c`
+
+To make a book of the entire directory, you'll have to also specify a title (-t), a release date (-r), and the directory for the table of contents (-c):
+`./make_book.py -t 'Linux 2.6.0' -r 'Released December 17, 2003' -c 'linux-2.6.0/kernel/' linux-2.6.0/kernel/`
+
+
+## -- Details --
+`make_chapter.py` and `make_book.py` will create a temporary working directory, and then use Jinja2 to render `.tex` files from the templates in the `templates/` directory. 
+
+`pdflatex` is then called from within the script to generate the pdf, which is copied back to the original working directory.
+
