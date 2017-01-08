@@ -11,7 +11,6 @@ Options:
   -r release    String of the release date
   -c contents   String for the table of contents
 
-
 """
 
 import contextlib
