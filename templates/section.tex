@@ -1,0 +1,34 @@
+\lstset{
+language=\VAR{language},                % Code langugage
+basicstyle=\ttfamily\footnotesize,      % Code font, inherited from paratype
+\BLOCK{ if color }
+keywordstyle=\color{OliveGreen},        % Keywords font ('*' = uppercase)
+commentstyle=\color{gray},              % Comments font
+\BLOCK{ else }
+keywordstyle=\color{black},             % Keywords font ('*' = uppercase)
+commentstyle=\color{black},             % Comments font
+\BLOCK{ endif }
+numbers=left,                           % Line nums position
+\BLOCK{ if color }
+numberstyle=\tiny\color{gray},          % Line-numbers fonts
+\BLOCK{ else }
+numberstyle=\tiny\color{black},         % Line-numbers fonts
+\BLOCK{ endif }
+stepnumber=1,                           % Step between different line-numbers
+firstnumber=1,                          % Set the first line number to 1
+numberfirstline=true,                   % Number the first line
+numbersep=5pt,                          % How far are line-numbers from code
+backgroundcolor=\color{white},          % Choose background color
+frame=none,                             % A frame around the code
+tabsize=2,                              % Default tab size
+captionpos=b,                           % Caption-position = bottom
+breaklines=true,                        % Automatic line breaking?
+breakatwhitespace=false,                % Automatic breaks only at whitespace?
+showspaces=false,                       % Dont make spaces visible
+showtabs=false,                         % Dont make tabls visible
+morekeywords={__global__, __device__},  % CUDA specific keywords
+}
+\newpage
+\ttfamily\section*{\texttt{\VAR{title}}}
+\addcontentsline{toc}{section}{\VAR{title}}
+\lstinputlisting{\VAR{filepath}}
