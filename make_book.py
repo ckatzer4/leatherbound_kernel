@@ -2,12 +2,15 @@
 """Make a pdf for a kernel directory
 
 Usage:
-  make_book.py [--color] -t title DIRECTORY
+  make_book.py [--color] -t title -r release -c contents DIRECTORY
 
 Options:
   -h --help     Show this help screen
   --color       Turn on color pdf output
   -t title      Title for the book
+  -r release    String of the release date
+  -c contents   String for the table of contents
+
 
 """
 
@@ -56,8 +59,6 @@ def build_sections(parent_dir, color):
       tex_file = the tex file name to use
 
     First four are used in render_section, the last is for tracking
-
-    # TODO: sort sections with Makefiles first for each child directory
     '''
     sections = []
     for (dirpath, dirnames, filenames) in os.walk(parent_dir):
@@ -145,7 +146,8 @@ if __name__ == "__main__":
     parent_path = arguments['DIRECTORY']
     parent_path = os.path.abspath(parent_path)
     book_title = arguments['-t'].replace('_','\_')
-    kernel_releasedate = 'Released December 18, 2003'
+    kernel_releasedate = arguments['-r']
+    kernel_contentsdir = arguments['-c'].replace('_','\_')
 
     # Populate the list of section dictionaries
     sections = build_sections(parent_path, color)
@@ -172,6 +174,7 @@ if __name__ == "__main__":
         # Section tex files are all created, now to create book:
         rendered_tex = book_template.render(title=book_title,
                                             releasedate=kernel_releasedate,
+                                            contentsdir=kernel_contentsdir,
                                             sections=sections)
         with open('book.tex', 'w') as tex:
             tex.write(rendered_tex)

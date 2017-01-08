@@ -41,6 +41,6 @@ If the TeX paratype package is too difficult to obtain, a different font could b
 ## -- Process --
 Download and unpack the kernel of choice from public archive.
 Run the `make_book.py` command to process the unpacked directory:
-`./make_book.py -t 'Linux 2.6.0' linux-2.6.0/kernel/`
+`./make_book.py --color -t 'Linux 2.6.0' -r 'Released December 17, 2003' -c 'linux-2.6.0/kernel/' linux-2.6.0/kernel/`
 
 The script will locate all files in the target directory and process the file name to create and render .tex files in a temporary directory. PDF output files are copied to the current working directory.
