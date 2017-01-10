@@ -30,7 +30,7 @@ This project makes use of the following LaTeX packages:
 
 Of these, the paratype package is likely the most difficult to obtain. 
 
-OpenSUSE provides a package (`zypper install texlive-paratype`), but [CTAN](http://www.ctan.org/tex-archive/fonts/paratype/tex) also provides a similar package. The CTAN package can be installed by downloading all the files to /usr/share/texmf/tex/latex/paratype/ , or to the proper location for your operating system.
+OpenSUSE and Fedora provide a `texlive-paratype` package in their repos, but [CTAN](http://www.ctan.org/tex-archive/fonts/paratype) also provides a similar package. The CTAN package can be installed by downloading all the files to /usr/share/texmf/tex/latex/paratype/ , or to the proper location for your operating system.
 
 
 If the TeX paratype package is too difficult to obtain, a different font could be used by changing the LaTeX templates under $projectroot/templates/

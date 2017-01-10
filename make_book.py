@@ -178,14 +178,22 @@ if __name__ == "__main__":
         with open('book.tex', 'w') as tex:
             tex.write(rendered_tex)
 
+        # Render the document three times
+        # 1st - initial render gets relative page numbers for sections
+        # 2nd - second render adds the length of the table of contents
+        # 3rd - third render gets correct page numbers for sections
         pdflatex_cmd = ['pdflatex', 'book.tex']
-        # pdflatex_cmd = ['ls','-l']
+
         print('Initial render')
         p = subprocess.run(pdflatex_cmd, 
                            stdout=subprocess.DEVNULL, 
                            stderr=subprocess.DEVNULL)
 
-        # Table of Contents isn't populated unless rendered twice
+        print('Rendering table of contents')
+        p = subprocess.run(pdflatex_cmd, 
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL)
+
         print('Final render')
         p = subprocess.run(pdflatex_cmd, 
                            stdout=subprocess.DEVNULL, 
