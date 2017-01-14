@@ -2,14 +2,15 @@
 """Make a pdf for a kernel directory
 
 Usage:
-  make_book.py [--color] -t title -r release -c contents DIRECTORY
+  make_book.py [--color] [--volumes num] -t title -r release_date -c contents_directory DIRECTORY
 
 Options:
-  -h --help     Show this help screen
-  --color       Turn on color pdf output
-  -t title      Title for the book
-  -r release    String of the release date
-  -c contents   String for the table of contents
+  -h --help          Show this help screen
+  --color            Turn on color pdf output
+  --volumes num      Split into 'num' pdfs (default: 1)
+  -t title           Title for the book
+  -r release         String of the release date
+  -c contents        String for the table of contents
 
 """
 
@@ -19,6 +20,8 @@ import sys
 import shutil
 import tempfile
 import subprocess
+import re
+from collections import OrderedDict
 
 from docopt import docopt
 from jinja2 import Environment, FileSystemLoader
@@ -111,6 +114,150 @@ def render_section(section, template):
     return rendered_tex
 
 
+def create_volume(vol_info):
+    '''
+    Creates the tex file named 'vol_info['tex']' with vol_info['sections'].
+    Section tex files are also created.
+
+    After this is done, we just need to compile pdf with 'pdflatex tex_file' 
+
+    Assumes:
+      section_template, gpl_template, and book_template are the correct 
+        Jinja2 templates
+    '''
+    for section in vol_info['sections']:
+        # print('Rendering {}'.format(section['tex_file']))
+        rendered_tex = render_section(section, section_template)
+        with open(section['tex_file']+'.tex', 'w') as tex:
+            tex.write(rendered_tex)
+       
+    # also need to include the GPLv2 license:
+    rendered_tex = gpl_template.render()
+    with open('gplv2.tex', 'w') as tex:
+        tex.write(rendered_tex)
+
+    # Section tex files are all created, now to create book:
+    rendered_tex = book_template.render(title=vol_info['title'],
+                                        releasedate=vol_info['releasedate'],
+                                        contentsdir=vol_info['contentsdir'],
+                                        sections=vol_info['sections'])
+    with open(vol_info['tex_file'], 'w') as tex:
+        tex.write(rendered_tex)
+
+
+def create_toc(vol_info):
+    '''
+    Render the document twice
+     1st - initial render gets relative page numbers for sections
+     2nd - second render adds the length of the table of contents
+    '''
+
+    pdflatex_cmd = ['pdflatex', vol_info['tex_file']]
+
+    print('Initial render for '+vol_info['tex_file'])
+    p = subprocess.run(pdflatex_cmd, 
+                       stdout=subprocess.DEVNULL, 
+                       stderr=subprocess.DEVNULL)
+
+    print('Rendering table of contents')
+    p = subprocess.run(pdflatex_cmd, 
+                       stdout=subprocess.DEVNULL, 
+                       stderr=subprocess.DEVNULL)
+
+    vol_info['toc'] = vol_info['tex_file'].replace('.tex','.toc')
+
+
+def create_pdf(vol_info):
+    '''
+    Render the final document (technically the third time)
+     3rd - third render gets correct page numbers for sections
+    '''
+    pdflatex_cmd = ['pdflatex', vol_info['tex_file']]
+
+    print('Final render')
+    p = subprocess.run(pdflatex_cmd, 
+                       stdout=subprocess.DEVNULL, 
+                       stderr=subprocess.DEVNULL)
+
+    # populate the pdf_file key with the generated file
+    vol_info['pdf_file'] = vol_info['tex_file'].replace('.tex', '.pdf')
+
+
+def copy_pdf(vol_info, tmp_dir, target_dir):
+    # move the pdf output to the original working directory
+    pdf_name = vol_info['pdf_file']
+    tmp_pdf = os.path.join(tmp_dir, pdf_name)
+    final_pdf = os.path.join(target_dir, pdf_name)
+    shutil.move(tmp_pdf, final_pdf)
+    print(final_pdf)
+
+
+def split_volumes(book_info, number_volumes):
+    '''
+    Split the original book into the desired number of volumes (number_volumes).
+
+    Returns a list of dictionaries with the following keys:
+      title - title for a new volume (e.g. Linux 2.6.0 Volume 2)
+      tex_file - the .tex file for the new volume
+      releasedate - release date of the original book
+      contentsdir - the contents directory of the original book
+      sections - a list of section dictionaries
+    '''
+    # if there's no need to split, just return the original for final compiling
+    if number_volumes < 2:
+        return [book_info]
+
+    # Create a dictionary of page numbers for all sections
+    # The chapter and license lines are ignored for now
+    section_page_regex = '\\contentsline \{section\}\{(.*)\}\{([0-9]+)\}'
+    page_to_section = OrderedDict()
+    section_count = 0
+    with open(book_info['toc'], 'r') as fh:
+        for line in fh:
+            if '{chapter}' in line:
+                continue
+            elif 'LICENSE' in line:
+                continue
+            else:
+                groups = re.search(section_page_regex, line)
+                if groups:
+                    # sections in the list are the same order of the toc
+                    # so we can just keep count and link them in the dict
+                    page = groups.group(2)
+                    page_to_section[int(page)] = book_info['sections'][section_count]
+                    section_count += 1
+
+    # "last" isn't quite right, but close enough for our puposes
+    last_page_number = max(page_to_section.keys())
+
+    # Use last_page_number to identify where to split
+    split_point = int(last_page_number)//number_volumes
+
+    # initialize list of volumes
+    volumes = [ { 'sections':[] } for x in range(number_volumes) ]
+
+    # populate the section list for new volumes
+    for (page, section) in page_to_section.items():
+        volume_index = page//split_point
+        # volume_index should never be more than number_volumes:
+        volume_index = min(volume_index, number_volumes-1)
+        volumes[volume_index]['sections'].append(section)
+
+    for (index, volume) in enumerate(volumes):
+        # Add the remaining keys for our new volumes
+        volume['title'] = '{title} Volume {i}'.format(title=book_info['title'],
+                                                          i=index)
+        volume['tex_file'] = 'vol{i}.tex'.format(i=index)
+        volume['releasedate'] = book_info['releasedate']
+        volume['contentsdir'] = book_info['contentsdir']
+
+        # Now to create .tex and .toc from dictionary
+        create_volume(volume)
+        create_toc(volume)
+
+    return volumes
+
+
 if __name__ == "__main__":
     arguments = docopt(__doc__, version='make_book 0.1')
 
@@ -144,64 +291,40 @@ if __name__ == "__main__":
     color = arguments['--color']
     parent_path = arguments['DIRECTORY']
     parent_path = os.path.abspath(parent_path)
-    book_title = arguments['-t'].replace('_','\_')
-    kernel_releasedate = arguments['-r']
-    kernel_contentsdir = arguments['-c'].replace('_','\_')
+    try:
+        number_volumes = int(arguments['--volumes'])
+    except TypeError:
+        number_volumes = 1
+
+    book_info = {}
+    book_info['tex_file'] = 'book.tex'
+    book_info['title'] = arguments['-t'].replace('_','\_')
+    book_info['releasedate'] = arguments['-r']
+    book_info['contentsdir'] = arguments['-c'].replace('_','\_')
 
     # Populate the list of section dictionaries
-    sections = build_sections(parent_path, color)
+    book_info['sections'] = build_sections(parent_path, color)
 
     # We want to generate all the tex files, in a tmp directory
     # so we're going to:
     # 1. create a temporary working directory
-    # 2. render all the section templates
-    # 3. render the book tex
-    # 4. generate the pdf and clean up
+    # 2. render all the section templates and the full book.tex
+    # 3. render table of contents for tex
+    # 4. use table of contents to split into volumes if necessary
+    # 5. for each vol*.tex, generate the final pdf and clean-up
     orig_work_dir = os.getcwd()
     with tempdir() as tmp:
-        for section in sections:
-            print('Rendering {}'.format(section['tex_file']))
-            rendered_tex = render_section(section, section_template)
-            with open(section['tex_file']+'.tex', 'w') as tex:
-                tex.write(rendered_tex)
-       
-        # also need to include the GPLv2 license:
-        rendered_tex = gpl_template.render()
-        with open('gplv2.tex', 'w') as tex:
-            tex.write(rendered_tex)
+        # create_volume populates the .tex file for the full book
+        create_volume(book_info)
 
-        # Section tex files are all created, now to create book:
-        rendered_tex = book_template.render(title=book_title,
-                                            releasedate=kernel_releasedate,
-                                            contentsdir=kernel_contentsdir,
-                                            sections=sections)
-        with open('book.tex', 'w') as tex:
-            tex.write(rendered_tex)
+        # create_toc populates the .toc file
+        create_toc(book_info)
 
-        # Render the document three times
-        # 1st - initial render gets relative page numbers for sections
-        # 2nd - second render adds the length of the table of contents
-        # 3rd - third render gets correct page numbers for sections
-        pdflatex_cmd = ['pdflatex', 'book.tex']
+        # create volumes based on initial renders
+        volumes = split_volumes(book_info, number_volumes)
 
-        print('Initial render')
-        p = subprocess.run(pdflatex_cmd, 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
+        # for each volume, create a pdf and copy back to original directory
+        for volume in volumes:
+            create_pdf(volume)
+            copy_pdf(volume, tmp, orig_work_dir)
 
-        print('Rendering table of contents')
-        p = subprocess.run(pdflatex_cmd, 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
-
-        print('Final render')
-        p = subprocess.run(pdflatex_cmd, 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
-
-        # move the pdf output to the original working directory
-        tmp_pdf = os.path.join(tmp, 'book.pdf')
-        final_pdf = os.path.join(orig_work_dir, 'book.pdf')
-        shutil.move(tmp_pdf,final_pdf)
-
-    print(final_pdf)
