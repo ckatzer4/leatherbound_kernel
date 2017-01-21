@@ -2,12 +2,17 @@
   twoside,
 ]{article}
 
-% Packages below
+% listings package is used to print out source code with line numbers
 \usepackage{listings}
+
+% color package allows us to define colors for --color option
 \usepackage[usenames,dvipsnames]{color}
 
-% paratype is provided by the OpenSUSE package texlive-paratype
+% paratype package is provided by the OpenSUSE/fedora package texlive-paratype
 \usepackage{paratype}
+
+% Use monospace font for everything by default
+\renewcommand{\familydefault}{\ttdefault}
 
 % Define custom colors for highlighting, if using color printing
 \definecolor{OliveGreen}{cmyk}{0.64,0,0.95,0.40}
@@ -18,18 +23,15 @@
 
 \lstset{
 language=\VAR{language},                % Code langugage
-basicstyle=\ttfamily\small,             % Code font, inherited from paratype
+basicstyle=\ttfamily\scriptsize,        % Code font, inherited from paratype
+numbers=left,                           % Line nums position
 \BLOCK{ if color }
 keywordstyle=\color{OliveGreen},        % Keywords font ('*' = uppercase)
 commentstyle=\color{gray},              % Comments font
+numberstyle=\tiny\color{gray},          % Line-numbers fonts
 \BLOCK{ else }
 keywordstyle=\color{black},             % Keywords font ('*' = uppercase)
 commentstyle=\color{black},             % Comments font
-\BLOCK{ endif }
-numbers=left,                           % Line nums position
-\BLOCK{ if color }
-numberstyle=\tiny\color{gray},          % Line-numbers fonts
-\BLOCK{ else }
 numberstyle=\tiny\color{black},         % Line-numbers fonts
 \BLOCK{ endif }
 stepnumber=1,                           % Step between different line-numbers
@@ -46,7 +48,7 @@ showspaces=false,                       % Dont make spaces visible
 showtabs=false,                         % Dont make tabls visible
 morekeywords={__global__, __device__},  % CUDA specific keywords
 }
-\ttfamily\section*{\textit{\VAR{title}}}
+\section*{\textit{\VAR{title}}}
 \pagestyle{headings}
 \markright{\VAR{title}}
 \lstinputlisting{\VAR{filepath}}

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Make a pdf for a sincle C file
+"""Make a pdf for a single C file
 
 Usage:
-  make_chapter.py [--color] [-p PARENTDIR] FILE
+  make_chapter.py [--color] [-p PARENTDIR] [--keep_tex] FILE
 
 Options:
   -h --help     Show this help screen
   --color       Turn on color pdf output
+  --keep_tex    Preserve the tex file
   -p PARENTDIR  Base directory
 
 """
@@ -44,6 +45,58 @@ def tempdir():
         yield dirpath
 
 
+def create_chapter(info):
+    '''
+    Creates the tex file named 'info['tex']' with info['sections'].
+
+    After this is done, we just need to compile pdf with 'pdflatex tex_file' 
+
+    Assumes:
+      chapter_template are the correct 
+        Jinja2 templates
+    '''
+    # Section tex files are all created, now to create book:
+    rendered_tex = chapter_template.render(color=info['color'],
+                                           language=info['language'],
+                                           title=info['title'],
+                                           filepath=info['filepath'])
+    with open(info['tex_file'], 'w') as tex:
+        tex.write(rendered_tex)
+
+
+def create_pdf(info):
+    '''
+    Render the final document
+    '''
+    pdflatex_cmd = ['pdflatex', info['tex_file']]
+
+    print('Final render')
+    p = subprocess.run(pdflatex_cmd, 
+                       stdout=subprocess.DEVNULL, 
+                       stderr=subprocess.DEVNULL)
+
+    # populate the pdf_file key with the generated file
+    info['pdf_file'] = info['tex_file'].replace('.tex', '.pdf')
+
+
+def copy_pdf(info, tmp_dir, target_dir):
+    # move the pdf output to the original working directory
+    pdf_name = info['pdf_file']
+    tmp_pdf = os.path.join(tmp_dir, pdf_name)
+    final_pdf = os.path.join(target_dir, pdf_name)
+    shutil.move(tmp_pdf, final_pdf)
+    print(final_pdf)
+
+
+def copy_tex(info, tmp_dir, target_dir):
+    # move the tex output to the original working directory
+    tex_name = info['tex_file']
+    tmp_tex = os.path.join(tmp_dir, tex_name)
+    final_tex = os.path.join(target_dir, tex_name)
+    shutil.move(tmp_tex, final_tex)
+    print(final_tex)
+
+
 if __name__ == "__main__":
     arguments = docopt(__doc__, version='make_chapter 0.1')
 
@@ -72,76 +125,54 @@ if __name__ == "__main__":
     chapter_template = latex_env.get_template('base.tex')
 
     # Parse options from docopt dicionary
-    color = arguments['--color']
-    filepath = arguments['FILE']
-    filepath = os.path.abspath(filepath)
-    filename = os.path.basename(filepath)
+    info = {}
+    info['color'] = arguments['--color']
+    keep_tex = arguments['--keep_tex']
+    info['filepath'] = arguments['FILE']
+    info['filepath'] = os.path.abspath(info['filepath'])
+    filename = os.path.basename(info['filepath'])
 
     # Determine language from filepath
     if (filename == 'Makefile') or (filename == 'Kconfig'):
-        language = 'make'
+        info['language'] = 'make'
     elif filename.endswith('.c'):
-        language = 'C'
+        info['language'] = 'C'
     elif filename.endswith('.h'):
-        language = 'C'
+        info['language'] = 'C'
     elif filename.endswith('.S'):
-        language = '{[x86masm]Assembler}'
+        info['language'] = '{[x86masm]Assembler}'
     elif filename.endswith('.sh'):
-        language = 'sh'
+        info['language'] = 'sh'
     else:
         # Make seems like a good general purpose
-        language = 'make'
+        info['language'] = 'make'
 
     # title is basename, or the relative path if parent is given
     if arguments['-p']:
         parent_dir = arguments['-p']
         parent_dir = os.path.abspath(parent_dir)
-        title = os.path.relpath(filepath, parent_dir)
+        rel_path = os.path.relpath(info['filepath'], parent_dir)
     else:
-        title = os.path.basename(filepath)
+        rel_path = os.path.basename(info['filepath'])
 
-    outfile_base = title
+    info['title'] = rel_path.replace('_','\_')
 
-    # escape underscores for title only
-    title = title.replace('_','\_')
+    info['tex_file'] = rel_path.replace('.','_').replace('/','_') + '.tex'
 
-    # I only want to render a pdf output, then print the name of the prd
+    # We want to generate all the tex files, in a tmp directory
     # so we're going to:
     # 1. create a temporary working directory
-    # 2. run pdflatex in that directory
-    # 3. copy the pdf out of the temp directory
-    # 4. clean up
+    # 2. render the tex
+    # 3. render the pdf
+    # 4. copy files back
     orig_work_dir = os.getcwd()
     with tempdir() as tmp:
-        rendered_tex = chapter_template.render(color=color, 
-                                               language=language,
-                                               title=title, 
-                                               filepath=filepath)
+        # create_chapter creates the .tex file for the chapter
+        create_chapter(info)
 
-        # outfile_base changes example/test\_file.c to example_test_file.c
-        outfile_base = outfile_base.replace('.','_')
-        outfile_base = outfile_base.replace('/','_')
+        # create the pdf and copy back to original directory
+        create_pdf(info)
+        copy_pdf(info, tmp, orig_work_dir)
+        if keep_tex:
+            copy_tex(info, tmp, orig_work_dir)
 
-        # define some file names
-        tex_file = '{}.tex'.format(outfile_base)
-        pdf_file = '{}.pdf'.format(outfile_base)
-        tmp_pdf = os.path.join(tmp, pdf_file)
-        final_pdf = os.path.join(orig_work_dir, pdf_file)
-        tmp_tex = os.path.join(tmp, tex_file)
-        final_tex = os.path.join(orig_work_dir, tex_file)
-
-        with open(tex_file, 'w') as tex:
-            tex.write(rendered_tex)
-        
-        # tex file is written, now run pdflatex
-        pdflatex_cmd = ['pdflatex', '"{}"'.format(tex_file)]
-        # pdflatex_cmd = ['ls','-l']
-        p = subprocess.run(pdflatex_cmd, 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
-
-        # move the pdf output to the original working directory
-        shutil.move(tmp_pdf,final_pdf)
-        shutil.move(tmp_tex,final_tex)
-
-    print(pdf_file)
