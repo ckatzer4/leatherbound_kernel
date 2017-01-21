@@ -1,17 +1,14 @@
 \lstset{
 language=\VAR{language},                % Code langugage
-basicstyle=\ttfamily\footnotesize,      % Code font, inherited from paratype
+basicstyle=\ttfamily\scriptsize,        % Code font, inherited from paratype
+numbers=left,                           % Line nums position
 \BLOCK{ if color }
 keywordstyle=\color{OliveGreen},        % Keywords font ('*' = uppercase)
 commentstyle=\color{gray},              % Comments font
+numberstyle=\tiny\color{gray},          % Line-numbers fonts
 \BLOCK{ else }
 keywordstyle=\color{black},             % Keywords font ('*' = uppercase)
 commentstyle=\color{black},             % Comments font
-\BLOCK{ endif }
-numbers=left,                           % Line nums position
-\BLOCK{ if color }
-numberstyle=\tiny\color{gray},          % Line-numbers fonts
-\BLOCK{ else }
 numberstyle=\tiny\color{black},         % Line-numbers fonts
 \BLOCK{ endif }
 stepnumber=1,                           % Step between different line-numbers
@@ -28,7 +25,7 @@ showspaces=false,                       % Dont make spaces visible
 showtabs=false,                         % Dont make tabls visible
 morekeywords={__global__, __device__},  % CUDA specific keywords
 }
-\newpage
-\ttfamily\section*{\texttt{\VAR{title}}}
-\addcontentsline{toc}{section}{\VAR{title}}
-\lstinputlisting{\VAR{filepath}}
+\newpage                                % always start on a new page
+\section*{\VAR{title}}                  % Display file name at top
+\addcontentsline{toc}{section}{\VAR{title}} % add entry to TOC
+\lstinputlisting{\VAR{filepath}}        % Print out source code

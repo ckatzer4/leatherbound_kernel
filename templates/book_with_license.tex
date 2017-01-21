@@ -1,19 +1,27 @@
 \documentclass{book}
-% Packages below
+
+% listings package is used to print out source code with line numbers
 \usepackage{listings}
+
+% color package allows us to define colors for --color option
 \usepackage[usenames,dvipsnames]{color}
 
-% paratype is provided by the OpenSUSE package texlive-paratype
+% paratype package is provided by the OpenSUSE/fedora package texlive-paratype
 \usepackage{paratype}
 
-% Attempting to keep page numbers on top of pages
+% fancyhdr simplifies page headers
 \usepackage{fancyhdr}
- 
+
+% Enable fancyhdr
 \pagestyle{fancy}
-%\renewcommand{\sectionmark}[1]{\markright{#1}}
+
+% all even pages have title (\leftmark) and page numbers on the outside
 \fancyhf{}
 \fancyhead[RE]{\leftmark}
 \fancyhead[LE,RO]{\thepage}
+
+% Use monospace font for everything by default
+\renewcommand{\familydefault}{\ttdefault}
 
 % Define custom colors for highlighting, if using color printing
 \definecolor{OliveGreen}{cmyk}{0.64,0,0.95,0.40}
@@ -24,13 +32,13 @@
 \title{\VAR{title}}
 \date{\VAR{releasedate}}
 
-\renewcommand*\contentsname{\LARGE\texttt{\VAR{title}}}
+% Display title on left-side pages and above table of contents
+\renewcommand*\contentsname{\VAR{title}}
 
 
 \begin{document}
-% Title page, include title in monospace and no header/footer
+% Title page with no header/footer
 \thispagestyle{empty}
-\ttfamily
 \maketitle
 \newpage
 
@@ -41,7 +49,6 @@
 % Begin table of contents
 \cleardoublepage
 \thispagestyle{empty}
-\ttfamily
 \addcontentsline{toc}{chapter}{ls -l \VAR{contentsdir}}
 \tableofcontents
 \cleardoublepage

@@ -2,12 +2,13 @@
 """Make a pdf for a kernel directory
 
 Usage:
-  make_book.py [--color] [--volumes num] -t title -r release_date -c contents_directory DIRECTORY
+  make_book.py [--color] [--volumes num] [--keep_tex] -t title -r release_date -c contents_directory DIRECTORY
 
 Options:
   -h --help          Show this help screen
   --color            Turn on color pdf output
   --volumes num      Split into 'num' pdfs (default: 1)
+  --keep_tex         Preserve the tex file(s)
   -t title           Title for the book
   -r release         String of the release date
   -c contents        String for the table of contents
@@ -192,6 +193,15 @@ def copy_pdf(vol_info, tmp_dir, target_dir):
     print(final_pdf)
 
 
+def copy_tex(vol_info, tmp_dir, target_dir):
+    # move the tex output to the original working directory
+    tex_name = vol_info['tex_file']
+    tmp_tex = os.path.join(tmp_dir, tex_name)
+    final_tex = os.path.join(target_dir, tex_name)
+    shutil.move(tmp_tex, final_tex)
+    print(final_tex)
+
+
 def split_volumes(book_info, number_volumes):
     '''
     Split the original book into the desired number of volumes (number_volumes).
@@ -289,6 +299,7 @@ if __name__ == "__main__":
 
     # Parse options from docopt dicionary
     color = arguments['--color']
+    keep_tex = arguments['--keep_tex']
     parent_path = arguments['DIRECTORY']
     parent_path = os.path.abspath(parent_path)
     try:
@@ -327,4 +338,6 @@ if __name__ == "__main__":
         for volume in volumes:
             create_pdf(volume)
             copy_pdf(volume, tmp, orig_work_dir)
+            if keep_tex:
+                copy_tex(volume, tmp, orig_work_dir)
 
