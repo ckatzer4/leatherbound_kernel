@@ -7,20 +7,20 @@ Python and LaTeX tools to create the PDFs for a leatherbound book of the Linux k
 `pdflatex` is then called from within the script to generate the pdf, which is copied back to the original working directory.
 
 ## Options and Usage
-`$ ./make_book.py
-Make a pdf for a kernel directory
-
-Usage:
-  make_book.py [--color] [--volumes num] [--keep_tex] -t title -r release_date -c contents_directory DIRECTORY
-
-Options:
-  -h --help          Show this help screen
-  --color            Turn on color pdf output
-  --volumes num      Split into 'num' pdfs (default: 1)
-  --keep_tex         Preserve the tex file(s)
-  -t title           Title for the book
-  -r release         String of the release date
-  -c contents        String for the table of contents`
+    $ ./make_book.py
+    Make a pdf for a kernel directory
+    
+    Usage:
+      make_book.py [--color] [--volumes num] [--keep_tex] -t title -r release_date -c contents_directory DIRECTORY
+    
+    Options:
+      -h --help          Show this help screen
+      --color            Turn on color pdf output
+      --volumes num      Split into 'num' pdfs (default: 1)
+      --keep_tex         Preserve the tex file(s)
+      -t title           Title for the book
+      -r release         String of the release date
+      -c contents        String for the table of contents
 
 ### Examples
 To create a single chapter of a .c file:
